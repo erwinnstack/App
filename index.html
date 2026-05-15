@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Planner Zilnic</title>
+<title>Planner</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
@@ -46,8 +46,8 @@ body{font-family:'Nunito',sans-serif;background:#f0f4ff;height:100vh;overflow:hi
 .col5{background:linear-gradient(135deg,#8b5cf6,#a78bfa)}
 .col6{background:linear-gradient(135deg,#ef4444,#f97316)}
 .col7{background:linear-gradient(135deg,#14b8a6,#06b6d4)}
-/* Default items get a muted/striped style */
-.col-default{background:linear-gradient(135deg,#94a3b8,#64748b);opacity:0.75}
+/* Default items use their assigned color normally */
+.col-default{background:linear-gradient(135deg,#6366f1,#8b5cf6)}
 .calendar{padding:1rem}
 .cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
 .cal-month{font-size:16px;font-weight:800;color:var(--text)}
@@ -316,17 +316,15 @@ function renderTimeline(){
 
   let blocksHtml='';
 
-  // Default blocks (shown with muted style)
+  // Default blocks (same style as regular activities)
   defaults.forEach(d=>{
-    const sh=parseInt(d.start),sm=parseInt(d.start.split(':')[1]);
-    const startH=parseInt(d.start.split(':')[0]);
+    const startH=parseInt(d.start.split(':')[0]),sm=parseInt(d.start.split(':')[1]);
     const top=startH*ROW+sm*(ROW/60);
     const height=Math.max((toMin(d.end)-toMin(d.start))*(ROW/60),36);
-    const cls=d.color||'col-default';
-    blocksHtml+=`<div class="activity-block ${cls}" style="position:absolute;top:${top}px;height:${height}px;left:4px;right:56px;opacity:0.6;">
+    const cls=d.color||'col0';
+    blocksHtml+=`<div class="activity-block ${cls}" style="position:absolute;top:${top}px;height:${height}px;left:56px;right:8px;">
       <div class="act-name">${d.name}</div>
       <div class="act-time">${d.start} – ${d.end}</div>
-      <div class="act-tag">📌 default</div>
     </div>`;
   });
 
@@ -406,12 +404,12 @@ function renderCalEvents(){
     <div style="height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .3s;"></div></div>
   </div>`
   +allItems.sort((a,b)=>toMin(a.start)-toMin(b.start)).map(a=>`
-    <div class="cal-event-item" style="border-left-color:${a.isDefault?'#94a3b8':COLOR_HEX[COLORS.indexOf(a.color)]}">
+    <div class="cal-event-item" style="border-left-color:${a.isDefault?(COLOR_HEX[COLORS.indexOf(a.color||'col0')]||COLOR_HEX[0]):COLOR_HEX[COLORS.indexOf(a.color)]}">
       <div>
         <div class="cal-event-name">${a.name}${a.isDefault?' <span style="font-size:10px;color:#94a3b8;">📌</span>':''}</div>
         <div class="cal-event-time">${a.start} – ${a.end}</div>
       </div>
-      <span class="cal-event-badge ${a.isDefault?'col-default':a.color}">${a.start}</span>
+      <span class="cal-event-badge ${a.isDefault?(a.color||'col0'):a.color}">${a.start}</span>
     </div>`).join('');
 }
 
