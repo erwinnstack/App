@@ -1,0 +1,532 @@
+<!DOCTYPE html>
+<html lang="ro">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Planner Zilnic</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Nunito',sans-serif;background:#f0f4ff;height:100vh;overflow:hidden;display:flex;justify-content:center}
+:root{--card:#fff;--sidebar:#1e1b4b;--primary:#6366f1;--primary-light:#e0e7ff;--text:#1e1b4b;--muted:#6b7280;--border:#e5e7eb;}
+.app{display:flex;height:100vh;width:100%;max-width:430px;position:relative;overflow:hidden}
+.sidebar{width:240px;background:var(--sidebar);color:#fff;display:flex;flex-direction:column;padding:1.5rem 1rem;position:absolute;left:-240px;top:0;height:100%;z-index:100;transition:left .3s ease;border-radius:0 1.5rem 1.5rem 0}
+.sidebar.open{left:0}
+.sidebar-overlay{position:absolute;inset:0;background:rgba(0,0,0,.4);z-index:99;display:none}
+.sidebar-overlay.show{display:block}
+.sidebar-title{font-size:20px;font-weight:800;margin-bottom:2rem;color:#a5b4fc}
+.sidebar-item{display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:12px;cursor:pointer;font-size:15px;font-weight:600;margin-bottom:6px;transition:all .2s}
+.sidebar-item:hover{background:rgba(255,255,255,.1)}
+.sidebar-item.active{background:#4f46e5;color:#fff}
+.sidebar-item i{font-size:20px}
+.main{flex:1;display:flex;flex-direction:column;width:100%;overflow:hidden}
+.header{background:var(--card);padding:1rem 1.2rem .8rem;display:flex;align-items:center;gap:12px;border-bottom:1px solid var(--border);flex-shrink:0}
+.menu-btn{background:none;border:none;cursor:pointer;color:var(--primary);font-size:24px;padding:4px}
+.header-info{flex:1}
+.header-title{font-size:17px;font-weight:800;color:var(--text)}
+.header-sub{font-size:12px;color:var(--muted)}
+.add-btn{background:var(--primary);color:#fff;border:none;border-radius:12px;padding:8px 14px;font-size:13px;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:'Nunito',sans-serif}
+.tabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);flex-shrink:0;overflow-x:auto}
+.tab{flex:1;padding:10px 4px;text-align:center;font-size:12px;font-weight:700;color:var(--muted);cursor:pointer;border-bottom:3px solid transparent;transition:all .2s;white-space:nowrap}
+.tab.active{color:var(--primary);border-bottom-color:var(--primary)}
+.views{flex:1;overflow:hidden;position:relative}
+.view{position:absolute;inset:0;overflow-y:auto;display:none}
+.view.active{display:block}
+.timeline{padding:.5rem 0}
+.activity-block{border-radius:10px;padding:6px 8px;cursor:pointer;overflow:hidden}
+.activity-block .act-name{font-size:13px;font-weight:800;color:#fff}
+.activity-block .act-time{font-size:11px;color:rgba(255,255,255,.8);margin-top:1px}
+.act-tag{font-size:10px;font-weight:700;color:rgba(255,255,255,.7);margin-top:1px}
+.col0{background:linear-gradient(135deg,#6366f1,#8b5cf6)}
+.col1{background:linear-gradient(135deg,#f43f5e,#ec4899)}
+.col2{background:linear-gradient(135deg,#0ea5e9,#06b6d4)}
+.col3{background:linear-gradient(135deg,#f59e0b,#f97316)}
+.col4{background:linear-gradient(135deg,#10b981,#059669)}
+.col5{background:linear-gradient(135deg,#8b5cf6,#a78bfa)}
+.col6{background:linear-gradient(135deg,#ef4444,#f97316)}
+.col7{background:linear-gradient(135deg,#14b8a6,#06b6d4)}
+/* Default items get a muted/striped style */
+.col-default{background:linear-gradient(135deg,#94a3b8,#64748b);opacity:0.75}
+.calendar{padding:1rem}
+.cal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem}
+.cal-month{font-size:16px;font-weight:800;color:var(--text)}
+.cal-nav{background:none;border:none;color:var(--primary);cursor:pointer;font-size:20px;padding:4px 8px}
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;text-align:center}
+.cal-day-name{font-size:11px;font-weight:700;color:var(--muted);padding:4px 0}
+.cal-day{font-size:13px;font-weight:600;padding:7px 2px 12px;border-radius:8px;cursor:pointer;position:relative;color:var(--text)}
+.cal-day:hover{background:var(--primary-light);color:var(--primary)}
+.cal-day.today{background:var(--primary);color:#fff}
+.cal-day.selected{outline:2px solid var(--primary);outline-offset:1px}
+.cal-day.other-month{color:var(--border)}
+/* colored dot replaces old .has-event */
+.cal-dot{position:absolute;bottom:3px;left:50%;transform:translateX(-50%);width:6px;height:6px;border-radius:50%;}
+.cal-events{margin-top:1rem}
+.cal-event-item{background:var(--card);border-radius:12px;padding:10px 14px;margin-bottom:8px;border-left:4px solid var(--primary);display:flex;justify-content:space-between;align-items:center}
+.cal-event-name{font-size:14px;font-weight:700;color:var(--text)}
+.cal-event-time{font-size:12px;color:var(--muted)}
+.cal-event-badge{font-size:11px;font-weight:700;padding:3px 8px;border-radius:6px;color:#fff}
+.notes-container{padding:1rem}
+.notes-list{display:flex;flex-direction:column;gap:10px}
+.note-card{background:var(--card);border-radius:14px;padding:14px;border:1px solid var(--border)}
+.note-date{font-size:11px;color:var(--muted);margin-bottom:4px}
+.note-text{font-size:14px;color:var(--text);font-weight:600;line-height:1.5}
+.note-delete{background:none;border:none;color:#ef4444;cursor:pointer;font-size:16px;padding:2px}
+.note-header{display:flex;justify-content:space-between;align-items:flex-start}
+/* Default view */
+.default-container{padding:1rem}
+.default-item{background:var(--card);border-radius:14px;padding:14px 16px;margin-bottom:10px;border:1px solid var(--border);display:flex;justify-content:space-between;align-items:center}
+.default-info{flex:1}
+.default-name{font-size:15px;font-weight:800;color:var(--text)}
+.default-time{font-size:12px;color:var(--muted);margin-top:2px}
+.default-tag{font-size:11px;font-weight:700;padding:2px 8px;border-radius:6px;margin-top:4px;display:inline-block}
+.tag-sleep{background:#e0e7ff;color:#4f46e5}
+.tag-fixed{background:#f0fdf4;color:#16a34a}
+.default-actions{display:flex;gap:8px}
+.btn-icon{background:none;border:none;cursor:pointer;font-size:18px;padding:4px;color:var(--muted)}
+.btn-icon:hover{color:#ef4444}
+.modal-overlay{position:absolute;inset:0;background:rgba(30,27,75,.5);z-index:200;display:flex;align-items:flex-end}
+.modal{background:var(--card);border-radius:24px 24px 0 0;padding:1.5rem;width:100%;max-height:85vh;overflow-y:auto}
+.modal-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:1.5rem}
+.form-group{margin-bottom:1rem}
+.form-label{font-size:12px;font-weight:700;color:var(--muted);margin-bottom:6px;display:block;text-transform:uppercase;letter-spacing:.5px}
+.form-input{width:100%;padding:10px 14px;border:1.5px solid var(--border);border-radius:10px;font-size:14px;font-weight:600;font-family:'Nunito',sans-serif;color:var(--text);outline:none;transition:border .2s}
+.form-input:focus{border-color:var(--primary)}
+.time-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.color-grid{display:flex;gap:8px;flex-wrap:wrap;margin-top:4px}
+.color-opt{width:28px;height:28px;border-radius:8px;cursor:pointer;border:3px solid transparent;transition:all .2s}
+.color-opt.sel{border-color:var(--text);transform:scale(1.1)}
+.modal-actions{display:flex;gap:10px;margin-top:1.5rem}
+.btn-primary{flex:1;background:var(--primary);color:#fff;border:none;border-radius:12px;padding:13px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif}
+.btn-cancel{background:#f3f4f6;color:var(--muted);border:none;border-radius:12px;padding:13px 20px;font-size:15px;font-weight:800;cursor:pointer;font-family:'Nunito',sans-serif}
+.empty-state{text-align:center;padding:3rem 1rem;color:var(--muted)}
+.empty-state i{font-size:48px;margin-bottom:1rem;display:block;opacity:.3}
+.empty-state p{font-size:14px;font-weight:600}
+.toggle-row{display:flex;align-items:center;gap:10px;margin-bottom:1rem}
+.toggle-label{font-size:13px;font-weight:700;color:var(--text)}
+.toggle{position:relative;width:40px;height:22px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.toggle-slider{position:absolute;inset:0;background:#e5e7eb;border-radius:22px;cursor:pointer;transition:.2s}
+.toggle-slider:before{content:'';position:absolute;width:16px;height:16px;left:3px;top:3px;background:#fff;border-radius:50%;transition:.2s}
+.toggle input:checked+.toggle-slider{background:var(--primary)}
+.toggle input:checked+.toggle-slider:before{transform:translateX(18px)}
+.view::-webkit-scrollbar{width:4px}
+.view::-webkit-scrollbar-track{background:transparent}
+.view::-webkit-scrollbar-thumb{background:#d1d5db;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="sidebar-overlay" id="overlay" onclick="closeSidebar()"></div>
+  <div class="sidebar" id="sidebar">
+    <div class="sidebar-title"><i class="ti ti-calendar-event"></i> Planner</div>
+    <div class="sidebar-item active" onclick="switchTab(0);closeSidebar()"><i class="ti ti-clock"></i> Ziua curentă</div>
+    <div class="sidebar-item" onclick="switchTab(1);closeSidebar()"><i class="ti ti-calendar"></i> Calendar</div>
+    <div class="sidebar-item" onclick="switchTab(2);closeSidebar()"><i class="ti ti-notes"></i> Notițe</div>
+    <div class="sidebar-item" onclick="switchTab(3);closeSidebar()"><i class="ti ti-pin"></i> Default</div>
+  </div>
+
+  <div class="main">
+    <div class="header">
+      <button class="menu-btn" onclick="toggleSidebar()"><i class="ti ti-menu-2"></i></button>
+      <div class="header-info">
+        <div class="header-title" id="headerTitle">Ziua curentă</div>
+        <div class="header-sub" id="headerSub"></div>
+      </div>
+      <button class="add-btn" id="addBtn" onclick="openModal()"><i class="ti ti-plus"></i> Adaugă</button>
+    </div>
+
+    <div class="tabs">
+      <div class="tab active" onclick="switchTab(0)"><i class="ti ti-clock"></i> Azi</div>
+      <div class="tab" onclick="switchTab(1)"><i class="ti ti-calendar"></i> Calendar</div>
+      <div class="tab" onclick="switchTab(2)"><i class="ti ti-notes"></i> Notițe</div>
+      <div class="tab" onclick="switchTab(3)"><i class="ti ti-pin"></i> Default</div>
+    </div>
+
+    <div class="views">
+      <!-- Day view -->
+      <div class="view active" id="view0">
+        <div class="timeline" id="timeline"></div>
+      </div>
+
+      <!-- Calendar view -->
+      <div class="view" id="view1">
+        <div class="calendar">
+          <div class="cal-header">
+            <button class="cal-nav" onclick="prevMonth()"><i class="ti ti-chevron-left"></i></button>
+            <div class="cal-month" id="calMonth"></div>
+            <button class="cal-nav" onclick="nextMonth()"><i class="ti ti-chevron-right"></i></button>
+          </div>
+          <div class="cal-grid" id="calGrid"></div>
+          <div class="cal-events" id="calEvents"></div>
+        </div>
+      </div>
+
+      <!-- Notes view -->
+      <div class="view" id="view2">
+        <div class="notes-container">
+          <div class="notes-list" id="notesList"></div>
+          <div id="notesEmpty" class="empty-state"><i class="ti ti-notes"></i><p>Nicio notiță. Apasă + pentru a adăuga.</p></div>
+        </div>
+      </div>
+
+      <!-- Default view -->
+      <div class="view" id="view3">
+        <div class="default-container">
+          <div id="defaultList"></div>
+          <div id="defaultEmpty" class="empty-state"><i class="ti ti-pin"></i><p>Nicio activitate fixă. Apasă + pentru a adăuga.</p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal" style="display:none">
+    <div class="modal">
+      <div class="modal-title" id="modalTitle">Adaugă activitate</div>
+
+      <!-- Activity form (tab 0) -->
+      <div id="activityForm">
+        <div class="form-group">
+          <label class="form-label">Denumire</label>
+          <input class="form-input" id="actName" placeholder="ex: Fotbal, Studiu..."/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Interval orar</label>
+          <div class="time-row">
+            <input class="form-input" type="time" id="actStart" value="09:00"/>
+            <input class="form-input" type="time" id="actEnd" value="11:00"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Culoare</label>
+          <div class="color-grid" id="colorGrid"></div>
+        </div>
+      </div>
+
+      <!-- Note form (tab 2) -->
+      <div id="noteForm" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Notiță</label>
+          <textarea class="form-input" id="noteText" rows="4" placeholder="Scrie notiță..."></textarea>
+        </div>
+      </div>
+
+      <!-- Default form (tab 3) -->
+      <div id="defaultForm" style="display:none">
+        <div class="form-group">
+          <label class="form-label">Denumire</label>
+          <input class="form-input" id="defName" placeholder="ex: Colegiu, Somn, Sală..."/>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Interval orar</label>
+          <div class="time-row">
+            <input class="form-input" type="time" id="defStart" value="08:00"/>
+            <input class="form-input" type="time" id="defEnd" value="16:00"/>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Culoare</label>
+          <div class="color-grid" id="colorGridDef"></div>
+        </div>
+        <div class="toggle-row">
+          <label class="toggle"><input type="checkbox" id="defIsSleep"/><span class="toggle-slider"></span></label>
+          <span class="toggle-label">Este somn (nu se calculează în ocupare)</span>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-cancel" onclick="closeModal()">Anulează</button>
+        <button class="btn-primary" onclick="saveItem()">Salvează</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const COLORS=['col0','col1','col2','col3','col4','col5','col6','col7'];
+const COLOR_HEX=['#6366f1','#f43f5e','#0ea5e9','#f59e0b','#10b981','#8b5cf6','#ef4444','#14b8a6'];
+
+let activities=JSON.parse(localStorage.getItem('activities')||'[]');
+let notes=JSON.parse(localStorage.getItem('notes')||'[]');
+let defaults=JSON.parse(localStorage.getItem('defaults')||'[]');
+let selColor=0,selColorDef=0;
+let currentTab=0;
+let calDate=new Date();
+let selCalDay=new Date();
+
+function save(){
+  localStorage.setItem('activities',JSON.stringify(activities));
+  localStorage.setItem('notes',JSON.stringify(notes));
+  localStorage.setItem('defaults',JSON.stringify(defaults));
+}
+
+function toggleSidebar(){document.getElementById('sidebar').classList.toggle('open');document.getElementById('overlay').classList.toggle('show')}
+function closeSidebar(){document.getElementById('sidebar').classList.remove('open');document.getElementById('overlay').classList.remove('show')}
+
+function switchTab(i){
+  currentTab=i;
+  document.querySelectorAll('.tab').forEach((t,j)=>t.classList.toggle('active',i===j));
+  document.querySelectorAll('.view').forEach((v,j)=>v.classList.toggle('active',i===j));
+  document.querySelectorAll('.sidebar-item').forEach((s,j)=>s.classList.toggle('active',i===j));
+  const titles=['Ziua curentă','Calendar','Notițe','Activități Default'];
+  document.getElementById('headerTitle').textContent=titles[i];
+  document.getElementById('addBtn').style.display=i===1?'none':'flex';
+  if(i===0)renderTimeline();
+  if(i===1)renderCalendar();
+  if(i===2)renderNotes();
+  if(i===3)renderDefaults();
+}
+
+/* ── helpers ── */
+function toMin(t){const[h,m]=t.split(':').map(Number);return h*60+m}
+function dateKey(d){return d.getFullYear()+'-'+(d.getMonth()+1).toString().padStart(2,'0')+'-'+d.getDate().toString().padStart(2,'0')}
+
+/* ── occupancy for a given date key (excludes sleep defaults) ── */
+function occupiedMinutes(key){
+  const acts=activities.filter(a=>a.date===key);
+  const defs=defaults.filter(d=>!d.isSleep);
+  let mins=0;
+  [...acts,...defs].forEach(a=>{mins+=Math.max(0,toMin(a.end)-toMin(a.start))});
+  return Math.min(mins,16*60); // cap at 16h (waking day)
+}
+function dotColor(key){
+  const occ=occupiedMinutes(key);
+  const pct=occ/(16*60);
+  if(pct<=0)return null;
+  if(pct<0.35)return '#22c55e';  // green
+  if(pct<0.70)return '#f59e0b';  // amber
+  return '#ef4444';              // red
+}
+
+/* ── Timeline ── */
+function renderTimeline(){
+  const ROW=60;
+  const now=new Date();
+  const todayKey=dateKey(now);
+  const todayActs=activities.filter(a=>a.date===todayKey);
+
+  let rowsHtml='';
+  for(let h=0;h<24;h++){
+    const label=h.toString().padStart(2,'0')+':00';
+    rowsHtml+=`<div style="position:absolute;top:${h*ROW}px;left:0;right:0;height:${ROW}px;border-bottom:1px solid #f3f4f6;display:flex;align-items:flex-start;">
+      <span style="width:52px;flex-shrink:0;font-size:11px;font-weight:700;color:#6b7280;padding:2px 8px 0;">${label}</span>
+    </div>`;
+  }
+
+  let blocksHtml='';
+
+  // Default blocks (shown with muted style)
+  defaults.forEach(d=>{
+    const sh=parseInt(d.start),sm=parseInt(d.start.split(':')[1]);
+    const startH=parseInt(d.start.split(':')[0]);
+    const top=startH*ROW+sm*(ROW/60);
+    const height=Math.max((toMin(d.end)-toMin(d.start))*(ROW/60),36);
+    const cls=d.color||'col-default';
+    blocksHtml+=`<div class="activity-block ${cls}" style="position:absolute;top:${top}px;height:${height}px;left:4px;right:56px;opacity:0.6;">
+      <div class="act-name">${d.name}</div>
+      <div class="act-time">${d.start} – ${d.end}</div>
+      <div class="act-tag">📌 default</div>
+    </div>`;
+  });
+
+  // Regular activity blocks
+  todayActs.forEach(a=>{
+    const startH=parseInt(a.start.split(':')[0]),sm=parseInt(a.start.split(':')[1]);
+    const top=startH*ROW+sm*(ROW/60);
+    const height=Math.max((toMin(a.end)-toMin(a.start))*(ROW/60),36);
+    blocksHtml+=`<div class="activity-block ${a.color}" style="position:absolute;top:${top}px;height:${height}px;left:56px;right:8px;" onclick="deleteActivity('${a.id}')">
+      <div class="act-name">${a.name}</div>
+      <div class="act-time">${a.start} – ${a.end}</div>
+    </div>`;
+  });
+
+  const nowTop=now.getHours()*ROW+now.getMinutes()*(ROW/60);
+  const nowHtml=`<div style="position:absolute;top:${nowTop}px;left:52px;right:0;height:2px;background:#ef4444;z-index:10;">
+    <div style="position:absolute;left:-5px;top:-4px;width:10px;height:10px;background:#ef4444;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 2px #ef4444;"></div>
+  </div>`;
+
+  document.getElementById('timeline').innerHTML=`<div style="position:relative;height:${24*ROW}px;">${rowsHtml}${blocksHtml}${nowHtml}</div>`;
+  const cont=document.getElementById('view0');
+  setTimeout(()=>cont.scrollTop=Math.max(0,now.getHours()*ROW-100),50);
+}
+
+function deleteActivity(id){
+  if(confirm('Șterge activitatea?')){
+    activities=activities.filter(a=>a.id!==id);
+    save();renderTimeline();renderCalendar();
+  }
+}
+
+/* ── Calendar ── */
+function prevMonth(){calDate=new Date(calDate.getFullYear(),calDate.getMonth()-1,1);renderCalendar()}
+function nextMonth(){calDate=new Date(calDate.getFullYear(),calDate.getMonth()+1,1);renderCalendar()}
+
+function renderCalendar(){
+  const months=['Ianuarie','Februarie','Martie','Aprilie','Mai','Iunie','Iulie','August','Septembrie','Octombrie','Noiembrie','Decembrie'];
+  document.getElementById('calMonth').textContent=months[calDate.getMonth()]+' '+calDate.getFullYear();
+  const grid=document.getElementById('calGrid');
+  const dayNames=['Lu','Ma','Mi','Jo','Vi','Sâ','Du'];
+  let html=dayNames.map(d=>`<div class="cal-day-name">${d}</div>`).join('');
+  const first=new Date(calDate.getFullYear(),calDate.getMonth(),1);
+  let startDay=(first.getDay()+6)%7;
+  const daysInMonth=new Date(calDate.getFullYear(),calDate.getMonth()+1,0).getDate();
+  const prevDays=new Date(calDate.getFullYear(),calDate.getMonth(),0).getDate();
+  const today=new Date();
+  for(let i=0;i<startDay;i++)html+=`<div class="cal-day other-month">${prevDays-startDay+1+i}</div>`;
+  for(let d=1;d<=daysInMonth;d++){
+    const date=new Date(calDate.getFullYear(),calDate.getMonth(),d);
+    const key=dateKey(date);
+    const isToday=key===dateKey(today);
+    const isSel=key===dateKey(selCalDay);
+    const dc=dotColor(key);
+    const dot=dc?`<span class="cal-dot" style="background:${isToday?'#fff':dc};"></span>`:'';
+    html+=`<div class="cal-day${isToday?' today':''}${isSel&&!isToday?' selected':''}" onclick="selectDay(${calDate.getFullYear()},${calDate.getMonth()},${d})">${d}${dot}</div>`;
+  }
+  grid.innerHTML=html;
+  renderCalEvents();
+}
+
+function selectDay(y,m,d){selCalDay=new Date(y,m,d);renderCalendar()}
+
+function renderCalEvents(){
+  const key=dateKey(selCalDay);
+  const evs=activities.filter(a=>a.date===key);
+  const cont=document.getElementById('calEvents');
+  const allItems=[
+    ...defaults.map(d=>({...d,isDefault:true})),
+    ...evs
+  ];
+  if(!allItems.length){cont.innerHTML=`<div class="empty-state"><i class="ti ti-calendar-off"></i><p>Nicio activitate în această zi</p></div>`;return}
+  const pct=Math.round(occupiedMinutes(key)/(16*60)*100);
+  const dc=dotColor(key);
+  const barColor=dc||'#94a3b8';
+  cont.innerHTML=`<div style="margin-bottom:12px;">
+    <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--muted);margin-bottom:4px;"><span>Ocupare zi (fără somn)</span><span style="color:${barColor}">${pct}%</span></div>
+    <div style="height:6px;background:#e5e7eb;border-radius:3px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${barColor};border-radius:3px;transition:width .3s;"></div></div>
+  </div>`
+  +allItems.sort((a,b)=>toMin(a.start)-toMin(b.start)).map(a=>`
+    <div class="cal-event-item" style="border-left-color:${a.isDefault?'#94a3b8':COLOR_HEX[COLORS.indexOf(a.color)]}">
+      <div>
+        <div class="cal-event-name">${a.name}${a.isDefault?' <span style="font-size:10px;color:#94a3b8;">📌</span>':''}</div>
+        <div class="cal-event-time">${a.start} – ${a.end}</div>
+      </div>
+      <span class="cal-event-badge ${a.isDefault?'col-default':a.color}">${a.start}</span>
+    </div>`).join('');
+}
+
+/* ── Notes ── */
+function renderNotes(){
+  const list=document.getElementById('notesList');
+  const empty=document.getElementById('notesEmpty');
+  if(!notes.length){list.innerHTML='';empty.style.display='block';return}
+  empty.style.display='none';
+  list.innerHTML=notes.map(n=>`
+    <div class="note-card" style="border-left:4px solid ${n.color||'var(--primary)'}">
+      <div class="note-header">
+        <div class="note-date">${n.date}</div>
+        <button class="btn-icon" onclick="deleteNote('${n.id}')"><i class="ti ti-trash"></i></button>
+      </div>
+      <div class="note-text">${n.text}</div>
+    </div>`).join('');
+}
+function deleteNote(id){notes=notes.filter(n=>n.id!==id);save();renderNotes()}
+
+/* ── Defaults ── */
+function renderDefaults(){
+  const list=document.getElementById('defaultList');
+  const empty=document.getElementById('defaultEmpty');
+  if(!defaults.length){list.innerHTML='';empty.style.display='block';return}
+  empty.style.display='none';
+  list.innerHTML=defaults.map(d=>`
+    <div class="default-item">
+      <div class="default-info">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="width:12px;height:12px;border-radius:3px;" class="${d.color||'col-default'}"></div>
+          <div class="default-name">${d.name}</div>
+        </div>
+        <div class="default-time">${d.start} – ${d.end}</div>
+        <span class="default-tag ${d.isSleep?'tag-sleep':'tag-fixed'}">${d.isSleep?'😴 Somn':'📌 Activitate fixă'}</span>
+      </div>
+      <button class="btn-icon" onclick="deleteDefault('${d.id}')"><i class="ti ti-trash"></i></button>
+    </div>`).join('');
+}
+function deleteDefault(id){
+  if(confirm('Șterge activitatea default?')){
+    defaults=defaults.filter(d=>d.id!==id);
+    save();renderDefaults();renderTimeline();
+  }
+}
+
+/* ── Modal ── */
+function openModal(){
+  document.getElementById('activityForm').style.display='none';
+  document.getElementById('noteForm').style.display='none';
+  document.getElementById('defaultForm').style.display='none';
+  if(currentTab===0){
+    document.getElementById('modalTitle').textContent='Adaugă activitate';
+    document.getElementById('activityForm').style.display='block';
+    buildColorGrid('colorGrid','selColor');
+  } else if(currentTab===2){
+    document.getElementById('modalTitle').textContent='Adaugă notiță';
+    document.getElementById('noteForm').style.display='block';
+  } else if(currentTab===3){
+    document.getElementById('modalTitle').textContent='Adaugă activitate default';
+    document.getElementById('defaultForm').style.display='block';
+    buildColorGrid('colorGridDef','selColorDef');
+  }
+  document.getElementById('modal').style.display='flex';
+}
+function closeModal(){document.getElementById('modal').style.display='none'}
+
+function buildColorGrid(gridId,colorVar){
+  const grid=document.getElementById(gridId);
+  const cur=colorVar==='selColor'?selColor:selColorDef;
+  grid.innerHTML=COLORS.map((c,i)=>`<div class="color-opt ${c}${i===cur?' sel':''}" onclick="pickColor(${i},'${colorVar}','${gridId}')"></div>`).join('');
+}
+function pickColor(i,colorVar,gridId){
+  if(colorVar==='selColor')selColor=i; else selColorDef=i;
+  buildColorGrid(gridId,colorVar);
+}
+
+function saveItem(){
+  if(currentTab===2){
+    const text=document.getElementById('noteText').value.trim();
+    if(!text)return;
+    notes.unshift({id:Date.now().toString(),text,date:new Date().toLocaleDateString('ro-RO'),color:COLOR_HEX[selColor]});
+    document.getElementById('noteText').value='';
+    save();closeModal();renderNotes();
+  } else if(currentTab===3){
+    const name=document.getElementById('defName').value.trim();
+    const start=document.getElementById('defStart').value;
+    const end=document.getElementById('defEnd').value;
+    const isSleep=document.getElementById('defIsSleep').checked;
+    if(!name||!start||!end)return;
+    defaults.push({id:Date.now().toString(),name,start,end,color:COLORS[selColorDef],isSleep});
+    document.getElementById('defName').value='';
+    document.getElementById('defIsSleep').checked=false;
+    save();closeModal();renderDefaults();renderTimeline();
+  } else {
+    const name=document.getElementById('actName').value.trim();
+    const start=document.getElementById('actStart').value;
+    const end=document.getElementById('actEnd').value;
+    if(!name||!start||!end)return;
+    activities.push({id:Date.now().toString(),name,start,end,color:COLORS[selColor],date:dateKey(new Date())});
+    document.getElementById('actName').value='';
+    save();closeModal();renderTimeline();renderCalendar();
+  }
+}
+
+/* ── Init ── */
+function updateSub(){
+  const days=['Duminică','Luni','Marți','Miercuri','Joi','Vineri','Sâmbătă'];
+  const months=['ian','feb','mar','apr','mai','iun','iul','aug','sep','oct','nov','dec'];
+  const now=new Date();
+  document.getElementById('headerSub').textContent=days[now.getDay()]+', '+now.getDate()+' '+months[now.getMonth()]+' '+now.getFullYear();
+}
+updateSub();
+renderTimeline();
+renderCalendar();
+</script>
+</body>
+</html>
